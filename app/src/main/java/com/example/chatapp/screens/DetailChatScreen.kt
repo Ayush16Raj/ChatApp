@@ -1,6 +1,6 @@
 package com.example.chatapp.screens
 
-import androidx.activity.compose.BackHandler
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,9 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.chatapp.ChatViewModel
 import com.example.chatapp.data.Message
+import kotlinx.coroutines.launch
 
 @Composable
 fun DetailChatScreen(navController: NavController, vm : ChatViewModel,chatId:String) {
+
+
     var reply by rememberSaveable {
         mutableStateOf("")
     }
@@ -46,15 +50,17 @@ fun DetailChatScreen(navController: NavController, vm : ChatViewModel,chatId:Str
         vm.onSendReply(chatId, reply)
         reply = ""
     }
-    var chatMessage = vm.chatMessages
+    val chatMessage = vm.chatMessages
     val myUser = vm.userData.value
     val currentChat = vm.chats.value.first{
         it.chatId == chatId
     }
+
     val chatUser = if(myUser?.userId == currentChat.user1.userId) currentChat.user2 else currentChat.user1
 
     LaunchedEffect(key1 = Unit ){
- vm.populateMessages(chatId)
+        vm.populateMessages(chatId)
+
     }
 
     Column {
@@ -70,7 +76,14 @@ ChatHeader(name = chatUser.name?:"") {
 
 @Composable
 fun MessageBox(modifier: Modifier,chatMessage: List<Message>,currentUserId:String){
-    LazyColumn(modifier = modifier){
+    val lazyColumnListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    LazyColumn(modifier = modifier, state = lazyColumnListState){
+        coroutineScope.launch {
+                lazyColumnListState.scrollToItem(chatMessage.size)
+
+        }
       items(chatMessage){
           msg->
           val alignment = if(msg.sendBy==currentUserId) Alignment.End else Alignment.Start
